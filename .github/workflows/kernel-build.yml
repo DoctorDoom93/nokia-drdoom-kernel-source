@@ -1,0 +1,52 @@
+name: Build Nokia 5.4 Kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          git bc bison flex libssl-dev libelf-dev \
+          build-essential python3 \
+          device-tree-compiler \
+          clang lld
+
+    - name: Setup environment
+      run: |
+        echo "ARCH=arm64" >> $GITHUB_ENV
+        echo "SUBARCH=arm64" >> $GITHUB_ENV
+
+    - name: Get toolchain (Clang)
+      run: |
+        git clone --depth=1 https://github.com/llvm/llvm-project.git llvm
+
+    - name: Configure kernel
+      run: |
+        make vendor/bengal_drdoom_defconfig
+
+    - name: Build kernel
+      run: |
+        make -j$(nproc) \
+          CC=clang \
+          LLVM=1 \
+          LLVM_IAS=1
+
+    - name: Upload kernel artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nokia54-kernel
+        path: |
+          arch/arm64/boot/Image
+          arch/arm64/boot/dts
