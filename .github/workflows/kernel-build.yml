@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
       with:
         submodules: true
 
@@ -28,16 +28,22 @@ jobs:
           git bc bison flex libssl-dev libelf-dev build-essential \
           device-tree-compiler gcc-aarch64-linux-gnu python3
 
+    - name: Force python3 as default
+      run: |
+        sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+    - name: Patch gcc-wrapper.py for Python 3
+      run: |
+        sed -i 's/print \(.*\)/print(\1)/g' ${{ github.workspace }}/scripts/gcc-wrapper.py
+
     - name: Configure kernel
       run: |
         cd $KERNEL_DIR
-        # استخدم defconfig الرسمي للنواة
         make vendor/bengal_drdoom_defconfig
 
     - name: Build kernel
       run: |
         cd $KERNEL_DIR
-        # بناء النواة باستخدام GCC لتجنب مشاكل Clang الصارمة
         make -j$(nproc) CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE \
           KCFLAGS="-Wno-error=array-bounds"
 
@@ -49,3 +55,5 @@ jobs:
         path: |
           ${{ github.workspace }}/arch/arm64/boot/Image
           ${{ github.workspace }}/arch/arm64/boot/dts/vendor/*.dtb
+        retention-days: 7
+        if-no-files-found: warn
