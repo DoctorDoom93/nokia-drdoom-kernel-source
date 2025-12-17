@@ -1,84 +1,53 @@
 name: Build Nokia 5.4 Kernel
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  build-kernel:
+    runs-on: ubuntu-20.04
+    env:
+      KERNEL_DIR: ${{ github.workspace }}
+      ARCH: arm64
+      CROSS_COMPILE: aarch64-linux-gnu-
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
+      with:
+        submodules: true
 
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          git bc bison flex libssl-dev libelf-dev \
-          build-essential python3 \
-          device-tree-compiler \
-          clang lld
+          git bc bison flex libssl-dev libelf-dev build-essential \
+          device-tree-compiler gcc-aarch64-linux-gnu
 
-    - name: Setup environment
+    - name: Set GCC for build
       run: |
-        echo "ARCH=arm64" >> $GITHUB_ENV
-        echo "SUBARCH=arm64" >> $GITHUB_ENV
-
-    - name: Get toolchain (Clang)
-      run: |
-        git clone --depth=1 https://github.com/llvm/llvm-project.git llvm
-
-    - name: Replace gcc-wrapper.py with Python3 compatible version
-      run: |
-        cat > scripts/gcc-wrapper.py << 'EOF'
-        #!/usr/bin/env python3
-        import sys
-        import subprocess
-        import re
-
-        proc = subprocess.Popen(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-        forbidden = re.compile(r"warning: .*")
-
-        for line in proc.stdout:
-            m = forbidden.search(line)
-            if m:
-                print("error, forbidden warning:", m.group(0))
-                sys.exit(1)
-            print(line, end='')
-
-        sys.exit(proc.wait())
-        EOF
-
-        chmod +x scripts/gcc-wrapper.py
+        export CC=gcc
+        export PATH=/usr/bin:$PATH
 
     - name: Configure kernel
       run: |
+        cd $KERNEL_DIR
         make vendor/bengal_drdoom_defconfig
-
-    - name: Create stub techpack to satisfy build
-      run: |
-        mkdir -p techpack
-        cat << 'EOF' > techpack/Makefile
-        # Stub techpack Makefile
-        obj-y :=
-        EOF
 
     - name: Build kernel
       run: |
-        make -j$(nproc) \
-          CC=clang \
-          LLVM=1 \
-          LLVM_IAS=1
+        cd $KERNEL_DIR
+        make -j$(nproc) CC=gcc \
+          ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE
 
-    - name: Upload kernel artifacts
-      uses: actions/upload-artifact@v4
+    - name: Archive built kernel
+      if: success()
+      uses: actions/upload-artifact@v3
       with:
-        name: nokia54-kernel
+        name: nokia5.4-kernel
         path: |
-          arch/arm64/boot/Image
-          arch/arm64/boot/dts
+          ${{ github.workspace }}/arch/arm64/boot/Image
+          ${{ github.workspace }}/arch/arm64/boot/dts/vendor/*.dtb
