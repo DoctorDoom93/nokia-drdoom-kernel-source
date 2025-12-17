@@ -41,11 +41,12 @@ jobs:
         cd $KERNEL_DIR
         make vendor/bengal_drdoom_defconfig
 
-    - name: Build kernel
+    - name: Build Image + DTBs only (skip techpack)
       run: |
         cd $KERNEL_DIR
-        make -j$(nproc) CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE \
-          KCFLAGS="-Wno-error=array-bounds"
+        make ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE \
+             KCFLAGS="-Wno-error=array-bounds" \
+             Image dtbs -j$(nproc)
 
     - name: Archive built kernel and DTBs
       if: success()
