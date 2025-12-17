@@ -19,14 +19,9 @@ jobs:
         sudo apt update
         sudo apt install -y \
           git bc bison flex libssl-dev libelf-dev \
-          build-essential python2 \
+          build-essential python3 \
           device-tree-compiler \
           clang lld
-
-    - name: Force python2
-      run: |
-        sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1
-
 
     - name: Setup environment
       run: |
@@ -36,6 +31,11 @@ jobs:
     - name: Get toolchain (Clang)
       run: |
         git clone --depth=1 https://github.com/llvm/llvm-project.git llvm
+
+    - name: Patch gcc-wrapper.py for Python3
+      run: |
+        sed -i 's|print "\(.*\)", \(.*\)|print("\1", \2)|' scripts/gcc-wrapper.py
+        sed -i 's|#!/usr/bin/env python$|#!/usr/bin/env python3|' scripts/gcc-wrapper.py
 
     - name: Configure kernel
       run: |
