@@ -60,17 +60,11 @@ jobs:
       run: |
         make vendor/bengal_drdoom_defconfig
 
-    - name: Disable Qualcomm techpack
+    - name: Force-disable techpack build
       run: |
-        scripts/config --disable CONFIG_QCOM_TECHPACK
-        scripts/config --disable CONFIG_QCOM_TECHPACK_AUDIO
-        scripts/config --disable CONFIG_QCOM_TECHPACK_CAMERA
-        scripts/config --disable CONFIG_QCOM_TECHPACK_DISPLAY
-        scripts/config --disable CONFIG_QCOM_TECHPACK_DATA
-
-    - name: Sync kernel config
-      run: |
-        make olddefconfig
+        sed -i 's/^obj-$(CONFIG_TECHPACK).*/# &/' Makefile
+        sed -i 's/^obj-$(CONFIG_QCOM_TECHPACK).*/# &/' Makefile
+        sed -i 's/^obj-$(CONFIG_QTI_TECHPACK).*/# &/' Makefile
 
     - name: Build kernel
       run: |
