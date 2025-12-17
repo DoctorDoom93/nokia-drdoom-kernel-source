@@ -68,6 +68,9 @@ jobs:
         scripts/config --disable CONFIG_QCOM_TECHPACK_DISPLAY
         scripts/config --disable CONFIG_QCOM_TECHPACK_DATA
 
+    - name: Sync kernel config
+      run: |
+        make olddefconfig
 
     - name: Build kernel
       run: |
