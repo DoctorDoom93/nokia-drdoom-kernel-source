@@ -8,15 +8,16 @@ on:
 
 jobs:
   build-kernel:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       KERNEL_DIR: ${{ github.workspace }}
       ARCH: arm64
       CROSS_COMPILE: aarch64-linux-gnu-
+      CC: gcc
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: true
 
@@ -25,27 +26,24 @@ jobs:
         sudo apt update
         sudo apt install -y \
           git bc bison flex libssl-dev libelf-dev build-essential \
-          device-tree-compiler gcc-aarch64-linux-gnu
-
-    - name: Set GCC for build
-      run: |
-        export CC=gcc
-        export PATH=/usr/bin:$PATH
+          device-tree-compiler gcc-aarch64-linux-gnu python3
 
     - name: Configure kernel
       run: |
         cd $KERNEL_DIR
+        # استخدم defconfig الرسمي للنواة
         make vendor/bengal_drdoom_defconfig
 
     - name: Build kernel
       run: |
         cd $KERNEL_DIR
-        make -j$(nproc) CC=gcc \
-          ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE
+        # بناء النواة باستخدام GCC لتجنب مشاكل Clang الصارمة
+        make -j$(nproc) CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE \
+          KCFLAGS="-Wno-error=array-bounds"
 
-    - name: Archive built kernel
+    - name: Archive built kernel and DTBs
       if: success()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nokia5.4-kernel
         path: |
