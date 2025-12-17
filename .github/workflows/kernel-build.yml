@@ -60,11 +60,13 @@ jobs:
       run: |
         make vendor/bengal_drdoom_defconfig
 
-    - name: Force-disable techpack build
+    - name: Create stub techpack to satisfy build
       run: |
-        sed -i 's/^obj-$(CONFIG_TECHPACK).*/# &/' Makefile
-        sed -i 's/^obj-$(CONFIG_QCOM_TECHPACK).*/# &/' Makefile
-        sed -i 's/^obj-$(CONFIG_QTI_TECHPACK).*/# &/' Makefile
+        mkdir -p techpack
+        cat << 'EOF' > techpack/Makefile
+        # Stub techpack Makefile
+        obj-y :=
+        EOF
 
     - name: Build kernel
       run: |
