@@ -32,10 +32,29 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/llvm/llvm-project.git llvm
 
-    - name: Patch gcc-wrapper.py for Python3
+    - name: Replace gcc-wrapper.py with Python3 compatible version
       run: |
-        sed -i 's|print "\(.*\)", \(.*\)|print("\1", \2)|' scripts/gcc-wrapper.py
-        sed -i 's|#!/usr/bin/env python$|#!/usr/bin/env python3|' scripts/gcc-wrapper.py
+        cat > scripts/gcc-wrapper.py << 'EOF'
+        #!/usr/bin/env python3
+        import sys
+        import subprocess
+        import re
+
+        proc = subprocess.Popen(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        forbidden = re.compile(r"warning: .*")
+
+        for line in proc.stdout:
+            m = forbidden.search(line)
+            if m:
+                print("error, forbidden warning:", m.group(0))
+                sys.exit(1)
+            print(line, end='')
+
+        sys.exit(proc.wait())
+        EOF
+
+        chmod +x scripts/gcc-wrapper.py
 
     - name: Configure kernel
       run: |
