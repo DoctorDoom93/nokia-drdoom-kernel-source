@@ -60,6 +60,15 @@ jobs:
       run: |
         make vendor/bengal_drdoom_defconfig
 
+    - name: Disable Qualcomm techpack
+      run: |
+        scripts/config --disable CONFIG_QCOM_TECHPACK
+        scripts/config --disable CONFIG_QCOM_TECHPACK_AUDIO
+        scripts/config --disable CONFIG_QCOM_TECHPACK_CAMERA
+        scripts/config --disable CONFIG_QCOM_TECHPACK_DISPLAY
+        scripts/config --disable CONFIG_QCOM_TECHPACK_DATA
+
+
     - name: Build kernel
       run: |
         make -j$(nproc) \
