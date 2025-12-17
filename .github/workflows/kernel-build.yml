@@ -41,8 +41,9 @@ jobs:
         cd $KERNEL_DIR
         make vendor/bengal_drdoom_defconfig
 
-    - name: Build Image + DTBs only (skip techpack)
+    - name: Build Image + DTBs only (skip techpack, use system dtc)
       run: |
+        export DTC=$(which dtc)
         cd $KERNEL_DIR
         make ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE \
              KCFLAGS="-Wno-error=array-bounds" \
